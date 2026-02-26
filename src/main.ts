@@ -13,7 +13,7 @@ import { config } from 'dotenv';
 
 config();
 
-// The init() call configures the Actor for its environment. It's recommended to start every Actor with an init().
+// Initialize the Actor environment
 await Actor.init();
 
 enum ScraperMode {
@@ -30,6 +30,7 @@ const scraperModeInputMap2: Record<string, ScraperMode> = {
   '2': ScraperMode.FULL,
 };
 
+// Updated Input interface with excludeUrls
 interface Input {
   scraperMode: string;
   searchQuery?: string;
@@ -39,9 +40,10 @@ interface Input {
   maxItems?: number;
   startPage?: number;
   takePages?: number;
+  excludeUrls?: string[]; // <-- NEW
 }
 
-// Structure of input is defined in input_schema.json
+// Get Actor input
 const input = await Actor.getInput<Input>();
 if (!input) throw new Error('Input is missing!');
 
@@ -57,6 +59,7 @@ const query: SearchLinkedinCompaniesParams = {
   industryId: input.industryIds || [],
 };
 
+// Clean up query arrays
 for (const key of Object.keys(query) as (keyof typeof query)[]) {
   if (Array.isArray(query[key]) && query[key].length) {
     (query[key] as string[]) = query[key]
@@ -87,6 +90,7 @@ const state: {
   scrapedItems: 0,
 };
 
+// Patch: skip already scraped companies
 const pushItem = async ({
   item,
   pagination,
@@ -94,8 +98,17 @@ const pushItem = async ({
   item: Company | CompanyShort;
   pagination: ApiPagination | null;
 }) => {
-  console.info(`Scraped company ${item.linkedinUrl || item?.universalName || item?.id}`);
+  const url = item.linkedinUrl || item?.universalName || item?.id;
+
+  // <-- NEW: skip if already in excludeUrls
+  if (input.excludeUrls?.includes(url)) {
+    console.log(`Skipping ${url} - already exists`);
+    return;
+  }
+
+  console.info(`Scraped company ${url}`);
   state.scrapedItems += 1;
+
   let pushResult: { eventChargeLimitReached: boolean } | null = null;
 
   item = {
@@ -172,6 +185,5 @@ await scraper.scrapeCompanies({
   maxItems: input.maxItems,
 });
 
-// Gracefully exit the Actor process. It's recommended to quit all Actors with an exit().
+// Gracefully exit the Actor
 await Actor.exit();
-// process.exit(0);
