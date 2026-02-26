@@ -67,7 +67,6 @@
       },
       "description": "Filter Companies by these company size ranges."
     },
-
     "startPage": {
       "title": "Start Page",
       "type": "integer",
@@ -83,6 +82,14 @@
       "description": "The number of search pages to scrape. Each page contains 50 companies. The last page is 20, according to LinkedIn limitations.",
       "minimum": 0,
       "maximum": 20
+    },
+
+    "excludeUrls": {
+      "title": "Exclude URLs",
+      "type": "array",
+      "editor": "stringList",
+      "description": "List of LinkedIn company URLs to skip if already scraped",
+      "default": []
     }
   }
 }
